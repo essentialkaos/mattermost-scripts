@@ -1,0 +1,225 @@
+#!/bin/bash
+# shellcheck disable=SC2181
+
+################################################################################
+
+# Database host (String)
+PG_HOST="${DB_HOST:-127.0.0.1}"
+
+# Database user name (String)
+PG_USER="${DB_USER:-mmuser}"
+
+# Database user password (String)
+PG_PASS="${DB_PASS}"
+
+# Name of Mattermost database (String)
+PG_DB="${DB_NAME:-mattermost}"
+
+# Path to directory with Mattermost data (String)
+MM_DATA="${DATA_DIR:-/srv/mattermost-data}"
+
+# Path to directory with logs (String)
+MM_LOGS="${LOGS_DIR:-/var/log/mattermost}"
+
+# Retention in days (Number)
+RETENTION=${RETENTION:-30}
+
+################################################################################
+
+log_file="$MM_LOGS/retention.log"
+data_file=""
+dry_run=""
+
+################################################################################
+
+# Main handler
+#
+# Code: No
+# Echo: No
+main() {
+  if [[ "$1" == "dry" ]] ; then
+    dry_run=true
+  fi
+
+  check
+
+  log "(INFO) Collecting info about deleted data…"
+
+  collectData
+  cleanupData
+
+  log "(INFO) Data processing successfully complete!"
+}
+
+# Check preferencies
+#
+# Code: No
+# Echo: No
+check() {
+  if [[ -z "$PG_HOST" ]] ; then
+    log "(ERROR) DB host is empty"
+    doExit 1
+  fi
+
+  if [[ -z "$PG_USER" ]] ; then
+    log "(ERROR) DB user is empty"
+    doExit 1
+  fi
+
+  if [[ -z "$PG_PASS" ]] ; then
+    log "(ERROR) DB password is empty"
+    doExit 1
+  fi
+
+  if [[ -z "$PG_DB" ]] ; then
+    log "(ERROR) DB name is empty"
+    doExit 1
+  fi
+
+  if [[ -z "$MM_DATA" ]] ; then
+    log "(ERROR) Path to Mattermost data directory is empty"
+    doExit 1
+  fi
+
+  if [[ ! -r "$MM_DATA" ]] ; then
+    log "(ERROR) Directory $MM_DATA is not readable"
+    doExit 1
+  fi
+
+  if [[ -z "$MM_LOGS" ]] ; then
+    log "(ERROR) Path to Mattermost logs directory is empty"
+    doExit 1
+  fi
+
+  if [[ ! -w "$MM_LOGS" ]] ; then
+    log "(ERROR) Directory $MM_LOGS is not writable"
+    doExit 1
+  fi
+
+  if [[ -z "$RETENTION" ]] ; then
+    log "(ERROR) Retention is empty"
+    doExit 1
+  fi
+
+  if [[ $RETENTION -lt 7 ]] ; then
+    log "(ERROR) Retention cannot be less than 7 days"
+    doExit 1
+  fi
+
+  if [[ $RETENTION -gt 365 ]] ; then
+    log "(ERROR) Retention cannot be greater than 365 days"
+    doExit 1
+  fi
+
+  if ! type -P awk &> /dev/null ; then
+    log "(ERROR) awk is required"
+    doExit 1
+  fi
+
+  if ! type -P psql &> /dev/null ; then
+    log "(ERROR) psql is required"
+    doExit 1
+  fi
+
+  if ! type -P shred &> /dev/null ; then
+    log "(ERROR) shred is required"
+    doExit 1
+  fi
+}
+
+# Collect info about deleted attachments
+#
+# Code: No
+# Echo: No
+collectData() {
+  data_file=$(mktemp)
+
+  local delete_before num_files
+
+  delete_before=$(date --date="$RETENTION day ago" '+%s%3N')
+
+  log "(INFO) Searching data in DB ${PG_USER}@${PG_HOST}/${PG_DB}…"
+
+  export PGPASSWORD="$PG_PASS"
+
+  execSQLQuery "SELECT path FROM fileinfo WHERE createat < $delete_before;" "$data_file"
+  execSQLQuery "SELECT thumbnailpath FROM fileinfo WHERE createat < $delete_before;" "$data_file"
+  execSQLQuery "SELECT previewpath FROM fileinfo WHERE createat < $delete_before;" "$data_file"
+
+  export PGPASSWORD=""
+
+  num_files=$(wc -l "$data_file")
+
+  log "(INFO) Found $num_files outdated files"
+}
+
+# Remove outdated deleted files
+#
+# Code: No
+# Echo: No
+cleanupData() {
+  local attachment
+
+  while read -r attachment ; do
+    if [[ -f "${MM_DATA}${attachment}" ]] ; then
+      log "Deleting attachment ${attachment}…"
+
+      if [[ -z "$dry_run" ]] ; then
+        shred -fuz "${MM_DATA}${attachment}"
+      fi
+    fi
+  done < <(awk 1 "$data_file")
+
+  log "Cleaning empty directories…"
+
+  if [[ -z "$dry_run" ]] ; then
+    find "$DATA_DIR" -type d -empty -delete
+  fi
+}
+
+# Execute SQL query and save result into file
+#
+# 1: Query (String)
+# 2: Path to output file (String)
+#
+# Code: No
+# Echo: No
+execSQLQuery() {
+  local query="$1"
+  local output="$2"
+
+  psql -h "$PG_HOST" -U "$PG_USER" "$PG_DB" -t -c "$query" 1>> "$output" 2> /dev/null
+
+  if [[ $? -ne 0 ]] ; then
+    log "(ERROR) Query executed with error \"$query\""
+    doExit 1
+  fi
+}
+
+# Print message to log file
+#
+# 1: Log message (String)
+#
+# Code: No
+# Echo: No
+log() {
+  echo "$(date '+[ %Y/%m/%d %H:%M:%S.%3N ]') $*" >> "$log_file"
+}
+
+# Exit from script
+#
+# 1: Exit code (Number) [Optional]
+#
+# Code: No
+# Echo: No
+doExit() {
+  if [[ -f "$data_file" ]] ; then
+    rm -f "$data_file"
+  fi
+
+  exit "${1:-0}"
+}
+
+################################################################################
+
+main "$@"

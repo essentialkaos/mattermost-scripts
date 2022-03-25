@@ -1,0 +1,20 @@
+name: CI
+
+on:
+  push:
+    branches: [master, develop]
+  pull_request:
+    branches: [master]
+
+  Shellcheck:
+    name: Shellcheck
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v2
+
+      - name: Check scripts with Shellcheck
+        uses: essentialkaos/shellcheck-action@v1
+        with:
+          files: mm-backup mm-retention
