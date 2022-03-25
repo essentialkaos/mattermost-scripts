@@ -1,7 +1,7 @@
 <p align="center"><a href="#readme"><img src="https://gh.kaos.st/mattermost-scripts.svg"/></a></p>
 
 <p align="center">
-  <a href="https://kaos.sh/w/kaosv/ci"><img src="https://kaos.sh/w/kaosv/ci.svg" alt="GitHub Actions CI Status" /></a>
+  <a href="https://kaos.sh/w/mattermost-scripts/ci"><img src="https://kaos.sh/w/mattermost-scripts/ci.svg" alt="GitHub Actions CI Status" /></a>
   <a href="#license"><img src="https://gh.kaos.st/apache2.svg"></a>
 </p>
 
