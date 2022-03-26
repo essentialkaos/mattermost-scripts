@@ -9,8 +9,8 @@
 
 Scripts collection for [Mattermost](https://mattermost.com).
 
-* `mm-retention` - Script for attachments cleanup
 * `mm-backup` - Script for backuping db and data
+* `mm-cleanup` - Script for cleaning up removed posts and attachments
 
 
 ### Installation
@@ -18,10 +18,10 @@ Scripts collection for [Mattermost](https://mattermost.com).
 #### From GitHub repository
 
 ```bash
-curl -fL# -o mm-retention https://kaos.sh/mattermost-scripts/mm-retention
+curl -fL# -o mm-cleanup https://kaos.sh/mattermost-scripts/mm-cleanup
 curl -fL# -o mm-backup https://kaos.sh/mattermost-scripts/mm-backup
-chmod +x mm-retention mm-backup
-sudo mv mm-retention mm-backup /usr/bin/
+chmod +x mm-cleanup mm-backup
+sudo mv mm-cleanup mm-backup /usr/bin/
 ```
 
 ### License

@@ -150,13 +150,13 @@ collectData() {
 
   export PGPASSWORD="$PG_PASS"
 
-  execSQLQuery "SELECT path FROM fileinfo WHERE createat < $delete_before;" "$data_file"
-  execSQLQuery "SELECT thumbnailpath FROM fileinfo WHERE createat < $delete_before;" "$data_file"
-  execSQLQuery "SELECT previewpath FROM fileinfo WHERE createat < $delete_before;" "$data_file"
+  execSQLQuery "SELECT path FROM fileinfo WHERE deleteat > 0 AND deleteat < $delete_before;" "$data_file"
+  execSQLQuery "SELECT thumbnailpath FROM fileinfo WHERE deleteat > 0 AND deleteat < $delete_before;" "$data_file"
+  execSQLQuery "SELECT previewpath FROM fileinfo WHERE deleteat > 0 AND deleteat < $delete_before;" "$data_file"
 
   if [[ -z "$dry_run" ]] ; then
-    execSQLQuery "DELETE FROM posts WHERE createat < $delete_before;"
-    execSQLQuery "DELETE FROM posts WHERE createat < $delete_before;"
+    execSQLQuery "DELETE FROM posts WHERE deleteat > 0 AND deleteat < $delete_before;"
+    execSQLQuery "DELETE FROM fileinfo WHERE deleteat > 0 AND deleteat < $delete_before;"
   fi
 
   export PGPASSWORD=""
