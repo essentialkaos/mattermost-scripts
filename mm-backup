@@ -55,6 +55,8 @@ main() {
     backupServer
   fi
 
+  cleanupData
+
   log "Backup successfully complete"
 }
 
@@ -106,6 +108,11 @@ check() {
   if [[ ! -w "$BACKUP_DIR" ]] ; then
     log "(ERROR) Directory $BACKUP_DIR is not writable"
     exit 1
+  fi
+
+  if [[ $RETENTION -lt 3 ]] ; then
+    log "(ERROR) Retention cannot be less than 7 days"
+    doExit 1
   fi
 
   if ! type -P xz &> /dev/null ; then
@@ -219,6 +226,15 @@ backupServer() {
   output_size=$(ls -lah "$output" | awk -F " " '{print $5}')
 
   log "Server backup successfully created (size: $output_size)"
+}
+
+# Remove outdated backups
+#
+# Code: No
+# Echo: No
+cleanupData() {
+  find "$BACKUP_DIR" -type f -mtime +"${RETENTION}" -delete &> /dev/null
+  find "$BACKUP_DIR" -type d -empty -delete &> /dev/null
 }
 
 # Print message to log file

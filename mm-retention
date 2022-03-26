@@ -146,6 +146,9 @@ collectData() {
   execSQLQuery "SELECT thumbnailpath FROM fileinfo WHERE createat < $delete_before;" "$data_file"
   execSQLQuery "SELECT previewpath FROM fileinfo WHERE createat < $delete_before;" "$data_file"
 
+  execSQLQuery "DELETE FROM posts WHERE createat < $delete_before;"
+  execSQLQuery "DELETE FROM posts WHERE createat < $delete_before;"
+
   export PGPASSWORD=""
 
   num_files=$(wc -l "$data_file")
@@ -173,14 +176,14 @@ cleanupData() {
   log "Cleaning empty directories…"
 
   if [[ -z "$dry_run" ]] ; then
-    find "$DATA_DIR" -type d -empty -delete
+    find "$DATA_DIR" -type d -empty -delete &> /dev/null
   fi
 }
 
 # Execute SQL query and save result into file
 #
 # 1: Query (String)
-# 2: Path to output file (String)
+# 2: Path to output file (String) [Optional]
 #
 # Code: No
 # Echo: No
@@ -188,7 +191,11 @@ execSQLQuery() {
   local query="$1"
   local output="$2"
 
-  psql -h "$PG_HOST" -U "$PG_USER" "$PG_DB" -t -c "$query" 1>> "$output" 2> /dev/null
+  if [[ -n "$output" ]] ; then
+    psql -h "$PG_HOST" -U "$PG_USER" "$PG_DB" -t -c "$query" 1>> "$output" 2> /dev/null
+  else
+    psql -h "$PG_HOST" -U "$PG_USER" "$PG_DB" -t -c "$query" &> /dev/null
+  fi
 
   if [[ $? -ne 0 ]] ; then
     log "(ERROR) Query executed with error \"$query\""
