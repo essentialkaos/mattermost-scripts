@@ -204,7 +204,10 @@ backupServer() {
   dir_parent=$(dirname "$MM_SERVER")
   dir_target=$(basename "$MM_SERVER")
 
-  tar -C "${dir_parent}" -cf --exclude="${dir_target}/logs" - "$dir_target" | xz -1 -z - > "$output"
+  tar -C "${dir_parent}" \
+      --exclude="${dir_target}/logs" \
+      --exclude="${dir_target}/prepackaged_plugins" \
+      -cf - "$dir_target" | xz -1 -z - > "$output"
 
   if [[ $? -ne 0 ]] ; then
     log "(ERROR) Can't create server backup"
