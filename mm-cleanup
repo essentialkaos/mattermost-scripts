@@ -22,12 +22,12 @@ MM_DATA="${DATA_DIR:-/srv/mattermost-data}"
 MM_LOGS="${LOGS_DIR:-/var/log/mattermost}"
 
 # Retention in days (Number)
-RETENTION=${RETENTION:-30}
+RETENTION=${RETENTION:-14}
 
 ################################################################################
 
 # Min retention in days (Number)
-MIN_RETENTION=7
+MIN_RETENTION=3
 
 # Max retention in days (Number)
 MAX_RETENTION=365
@@ -51,12 +51,15 @@ main() {
 
   check
 
+  log "--------------------------------------------------------------------------------"
   log "(INFO) Collecting info about deleted data…"
 
   collectData
   cleanupData
 
   log "(INFO) Data processing successfully complete!"
+
+  doExit
 }
 
 # Check preferencies
@@ -151,8 +154,8 @@ collectData() {
   export PGPASSWORD="$PG_PASS"
 
   execSQLQuery "SELECT path FROM fileinfo WHERE deleteat > 0 AND deleteat < $delete_before;" "$data_file"
-  execSQLQuery "SELECT thumbnailpath FROM fileinfo WHERE deleteat > 0 AND deleteat < $delete_before;" "$data_file"
-  execSQLQuery "SELECT previewpath FROM fileinfo WHERE deleteat > 0 AND deleteat < $delete_before;" "$data_file"
+  execSQLQuery "SELECT thumbnailpath FROM fileinfo WHERE thumbnailpath != '' AND deleteat > 0 AND deleteat < $delete_before;" "$data_file"
+  execSQLQuery "SELECT previewpath FROM fileinfo WHERE previewpath != '' AND deleteat > 0 AND deleteat < $delete_before;" "$data_file"
 
   if [[ -z "$dry_run" ]] ; then
     execSQLQuery "DELETE FROM posts WHERE deleteat > 0 AND deleteat < $delete_before;"
@@ -161,7 +164,7 @@ collectData() {
 
   export PGPASSWORD=""
 
-  num_files=$(wc -l "$data_file")
+  num_files=$(cat "$data_file" | wc -l)
 
   log "(INFO) Found $num_files outdated files"
 }
@@ -174,11 +177,11 @@ cleanupData() {
   local attachment
 
   while read -r attachment ; do
-    if [[ -f "${MM_DATA}${attachment}" ]] ; then
+    if [[ -f "${MM_DATA}/${attachment}" ]] ; then
       log "Deleting attachment ${attachment}…"
 
       if [[ -z "$dry_run" ]] ; then
-        shred -fuz "${MM_DATA}${attachment}"
+        shred -fuz "${MM_DATA}/${attachment}"
       fi
     fi
   done < <(awk 1 "$data_file")
@@ -202,9 +205,9 @@ execSQLQuery() {
   local output="$2"
 
   if [[ -n "$output" ]] ; then
-    psql -h "$PG_HOST" -U "$PG_USER" "$PG_DB" -t -c "$query" 1>> "$output" 2> /dev/null
+    psql -h "$PG_HOST" -U "$PG_USER" "$PG_DB" -A -q -t -c "$query" 1>> "$output" 2> /dev/null
   else
-    psql -h "$PG_HOST" -U "$PG_USER" "$PG_DB" -t -c "$query" &> /dev/null
+    psql -h "$PG_HOST" -U "$PG_USER" "$PG_DB" -A -q -t -c "$query" &> /dev/null
   fi
 
   if [[ $? -ne 0 ]] ; then

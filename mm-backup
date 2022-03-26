@@ -45,6 +45,7 @@ main() {
 
   check
 
+  log "--------------------------------------------------------------------------------"
   log "Starting backup process…"
 
   createBackupDir
