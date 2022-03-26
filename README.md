@@ -9,9 +9,8 @@
 
 Scripts collection for [Mattermost](https://mattermost.com).
 
-* `mm-backup` - Script for backuping db and data
-* `mm-cleanup` - Script for cleaning up removed posts and attachments
-
+* [`mm-backup`](mm-backup) - Script for backuping db and data
+* [`mm-cleanup`](mm-cleanup) - Script for cleaning up removed posts and attachments
 
 ### Installation
 
