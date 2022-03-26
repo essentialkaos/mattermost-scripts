@@ -27,12 +27,9 @@ BACKUP_DIR="${BACKUP_DIR:-/var/backup}"
 # Retention in days (Number)
 RETENTION=${RETENTION:-90}
 
-# XZ compression level (Number)
-XZ_COMPRESSION=${XZ_COMPRESSION:-4}
-
 ################################################################################
 
-backup_date=""
+backup_dir=""
 full_backup=""
 
 ################################################################################
@@ -50,8 +47,7 @@ main() {
 
   log "Starting backup process…"
 
-  backup_date=$(date '+%Y-%m-%d-%H%M')
-
+  createBackupDir
   backupDB
   backupData
 
@@ -69,57 +65,73 @@ main() {
 check() {
   if [[ -z "$PG_HOST" ]] ; then
     log "(ERROR) DB host is empty"
-    doExit 1
+    exit 1
   fi
 
   if [[ -z "$PG_USER" ]] ; then
     log "(ERROR) DB user is empty"
-    doExit 1
+    exit 1
   fi
 
   if [[ -z "$PG_PASS" ]] ; then
     log "(ERROR) DB password is empty"
-    doExit 1
+    exit 1
   fi
 
   if [[ -z "$PG_DB" ]] ; then
     log "(ERROR) DB name is empty"
-    doExit 1
+    exit 1
   fi
 
   if [[ -z "$MM_DATA" ]] ; then
     log "(ERROR) Path to Mattermost data directory is empty"
-    doExit 1
+    exit 1
   fi
 
   if [[ -z "$MM_SERVER" ]] ; then
     log "(ERROR) Path to Mattermost server directory is empty"
-    doExit 1
+    exit 1
   fi
 
   if [[ ! -r "$MM_DATA" ]] ; then
     log "(ERROR) Directory $MM_DATA is not readable"
-    doExit 1
+    exit 1
   fi
 
   if [[ ! -r "$MM_SERVER" ]] ; then
     log "(ERROR) Directory $MM_SERVER is not readable"
-    doExit 1
+    exit 1
   fi
 
   if [[ ! -w "$BACKUP_DIR" ]] ; then
     log "(ERROR) Directory $BACKUP_DIR is not writable"
-    doExit 1
+    exit 1
   fi
 
   if ! type -P xz &> /dev/null ; then
     log "(ERROR) xz is required"
-    doExit 1
+    exit 1
   fi
 
   if ! type -P pg_dump &> /dev/null ; then
     log "(ERROR) pg_dump is required"
-    doExit 1
+    exit 1
+  fi
+}
+
+# Create directory for backups
+#
+# Code: No
+# Echo: No
+createBackupDir() {
+  local backup_date
+
+  backup_date=$(date '+%Y-%m-%d-%H%M')
+  backup_dir="${BACKUP_DIR}/${backup_date}"
+
+  if ! mkdir "${backup_dir}" &> /dev/null ; then
+    log "(ERROR) Can't create directory for backup"
+    exit 1
   fi
 }
 
@@ -134,16 +146,18 @@ backupDB() {
 
   export PGPASSWORD="$PG_PASS"
 
-  output="${BACKUP_DIR}/database-${backup_date}.xz"
+  output="${backup_dir}/database.xz"
 
-  pg_dump -h "$PG_HOST" -U "$PG_USER" "$PG_DB" | xz -"${XZ_COMPRESSION}" > "$output"
+  pg_dump -h "$PG_HOST" -U "$PG_USER" "$PG_DB" | xz -4 > "$output"
 
   if [[ $? -ne 0 ]] ; then
     log "(ERROR) Can't create database backup"
-    exit 1
+    export PGPASSWORD=""
+    return
   fi
 
   export PGPASSWORD=""
+  chmod 600 "$output"
 
   output_size=$(ls -lah "$output" | awk -F " " '{print $5}')
 
@@ -159,9 +173,16 @@ backupData() {
 
   log "Backuping data…"
 
-  output="${BACKUP_DIR}/data-${backup_date}.tar.xz"
+  output="${backup_dir}/data.tar.xz"
 
-  tar -cf - "$MM_DATA" | xz -"${XZ_COMPRESSION}" -z - > "$output"
+  tar -cf - "$MM_DATA" | xz -1 -z - > "$output"
+
+  if [[ $? -ne 0 ]] ; then
+    log "(ERROR) Can't create data backup"
+    return
+  fi
+
+  chmod 600 "$output"
 
   output_size=$(ls -lah "$output" | awk -F " " '{print $5}')
 
@@ -177,9 +198,16 @@ backupServer() {
 
   log "Backuping server…"
 
-  output="${BACKUP_DIR}/server-${backup_date}.tar.xz"
+  output="${backup_dir}/server.tar.xz"
 
-  tar -cf --exclude="$MM_DATA/logs" - "$MM_DATA" | xz -"${XZ_COMPRESSION}" -z - > "$output"
+  tar -cf --exclude="$MM_DATA/logs" - "$MM_DATA" | xz -1 -z - > "$output"
+
+  if [[ $? -ne 0 ]] ; then
+    log "(ERROR) Can't create server backup"
+    return
+  fi
+
+  chmod 600 "$output"
 
   output_size=$(ls -lah "$output" | awk -F " " '{print $5}')
 
