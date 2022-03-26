@@ -164,7 +164,7 @@ collectData() {
 
   export PGPASSWORD=""
 
-  num_files=$(cat "$data_file" | wc -l)
+  num_files=$(wc -l < "$data_file")
 
   log "(INFO) Found $num_files outdated files"
 }
