@@ -26,6 +26,14 @@ RETENTION=${RETENTION:-30}
 
 ################################################################################
 
+# Min retention in days (Number)
+MIN_RETENTION=7
+
+# Max retention in days (Number)
+MAX_RETENTION=365
+
+################################################################################
+
 log_file="$MM_LOGS/retention.log"
 data_file=""
 dry_run=""
@@ -101,13 +109,13 @@ check() {
     doExit 1
   fi
 
-  if [[ $RETENTION -lt 7 ]] ; then
-    log "(ERROR) Retention cannot be less than 7 days"
+  if [[ $RETENTION -lt $MIN_RETENTION ]] ; then
+    log "(ERROR) Retention cannot be less than $MIN_RETENTION days"
     doExit 1
   fi
 
-  if [[ $RETENTION -gt 365 ]] ; then
-    log "(ERROR) Retention cannot be greater than 365 days"
+  if [[ $RETENTION -gt $MAX_RETENTION ]] ; then
+    log "(ERROR) Retention cannot be greater than $MAX_RETENTION days"
     doExit 1
   fi
 
