@@ -169,13 +169,15 @@ backupDB() {
 # Code: No
 # Echo: No
 backupData() {
-  local output output_size
+  local output output_size dir_parent dir_target
 
   log "Backuping data…"
 
-  output="${backup_dir}/data.tar.xz"
+  output="${backup_dir}/data.txz"
+  dir_parent=$(dirname "$MM_DATA")
+  dir_target=$(basename "$MM_DATA")
 
-  tar -cf - "$MM_DATA" | xz -1 -z - > "$output"
+  tar -C "${dir_parent}" -cf - "$dir_target" | xz -1 -z - > "$output"
 
   if [[ $? -ne 0 ]] ; then
     log "(ERROR) Can't create data backup"
@@ -194,13 +196,15 @@ backupData() {
 # Code: No
 # Echo: No
 backupServer() {
-  local output output_size
+  local output output_size dir_parent dir_target
 
   log "Backuping server…"
 
-  output="${backup_dir}/server.tar.xz"
+  output="${backup_dir}/server.txz"
+  dir_parent=$(dirname "$MM_SERVER")
+  dir_target=$(basename "$MM_SERVER")
 
-  tar -cf --exclude="$MM_DATA/logs" - "$MM_DATA" | xz -1 -z - > "$output"
+  tar -C "${dir_parent}" -cf --exclude="${dir_target}/logs" - "$dir_target" | xz -1 -z - > "$output"
 
   if [[ $? -ne 0 ]] ; then
     log "(ERROR) Can't create server backup"
