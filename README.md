@@ -24,6 +24,23 @@ chmod +x mm-cleanup mm-backup
 sudo mv mm-cleanup mm-backup /usr/bin/
 ```
 
+#### Periodical jobs with Crond
+
+```bash
+SHELL=/bin/bash
+PATH=/sbin:/bin:/usr/sbin:/usr/bin
+MAILTO=root
+
+# Database password
+DB_PASS=mydbpassword
+
+# At 03:00 on every 2nd day-of-month
+0 3 */2 * * /usr/bin/mm-backup
+
+# At 06:00 every day
+0 6 * * * /usr/bin/mm-cleanup
+```
+
 ### License
 
 [Apache License, Version 2.0](https://www.apache.org/licenses/LICENSE-2.0)

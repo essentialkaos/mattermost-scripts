@@ -18,6 +18,9 @@ PG_DB="${DB_NAME:-mattermost}"
 # Path to directory with Mattermost data (String)
 MM_DATA="${DATA_DIR:-/srv/mattermost-data}"
 
+# Path to directory with logs (String)
+MM_LOGS="${LOGS_DIR:-/var/log/mattermost}"
+
 # Path to directory with Mattermost server (String)
 MM_SERVER="${SERVER_DIR:-/srv/mattermost}"
 
@@ -28,6 +31,8 @@ BACKUP_DIR="${BACKUP_DIR:-/var/backup}"
 RETENTION=${RETENTION:-90}
 
 ################################################################################
+
+log_file="$MM_LOGS/backup.log"
 
 backup_dir=""
 full_backup=""
@@ -89,6 +94,16 @@ check() {
   if [[ -z "$MM_DATA" ]] ; then
     log "(ERROR) Path to Mattermost data directory is empty"
     exit 1
+  fi
+
+  if [[ -z "$MM_LOGS" ]] ; then
+    log "(ERROR) Path to Mattermost logs directory is empty"
+    doExit 1
+  fi
+
+  if [[ ! -w "$MM_LOGS" ]] ; then
+    log "(ERROR) Directory $MM_LOGS is not writable"
+    doExit 1
   fi
 
   if [[ -z "$MM_SERVER" ]] ; then
@@ -245,7 +260,7 @@ cleanupData() {
 # Code: No
 # Echo: No
 log() {
-  echo "$(date '+[ %Y/%m/%d %H:%M:%S.%3N ]') $*"
+  echo "$(date '+[ %Y/%m/%d %H:%M:%S.%3N ]') $*" >> "$log_file"
 }
 
 ################################################################################
