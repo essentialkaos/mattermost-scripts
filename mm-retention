@@ -154,8 +154,10 @@ collectData() {
   execSQLQuery "SELECT thumbnailpath FROM fileinfo WHERE createat < $delete_before;" "$data_file"
   execSQLQuery "SELECT previewpath FROM fileinfo WHERE createat < $delete_before;" "$data_file"
 
-  execSQLQuery "DELETE FROM posts WHERE createat < $delete_before;"
-  execSQLQuery "DELETE FROM posts WHERE createat < $delete_before;"
+  if [[ -z "$dry_run" ]] ; then
+    execSQLQuery "DELETE FROM posts WHERE createat < $delete_before;"
+    execSQLQuery "DELETE FROM posts WHERE createat < $delete_before;"
+  fi
 
   export PGPASSWORD=""
 
