@@ -34,10 +34,10 @@ MAILTO=root
 DB_PASS=mydbpassword
 
 # At 03:00 on every 2nd day-of-month
-0 3 */2 * * /usr/bin/mm-backup
+0 3 */2 * * root /usr/bin/mm-backup
 
 # At 06:00 every day
-0 6 * * * /usr/bin/mm-cleanup
+0 6 * * * root /usr/bin/mm-cleanup
 ```
 
 ### License
