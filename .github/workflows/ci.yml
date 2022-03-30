@@ -18,4 +18,4 @@ jobs:
       - name: Check scripts with Shellcheck
         uses: essentialkaos/shellcheck-action@v1
         with:
-          files: mm-backup mm-cleanup
+          files: mm-backup mm-cleanup mm-useredit

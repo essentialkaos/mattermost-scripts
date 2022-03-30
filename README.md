@@ -11,6 +11,7 @@ Scripts collection for [Mattermost](https://mattermost.com).
 
 * [`mm-backup`](mm-backup) - Script for backuping db and data
 * [`mm-cleanup`](mm-cleanup) - Script for cleaning up removed posts and attachments
+* [`mm-useredit`](mm-useredit) - Script for changing user properties (_email, name, nickname…_)
 
 ### Installation
 
@@ -19,8 +20,9 @@ Scripts collection for [Mattermost](https://mattermost.com).
 ```bash
 curl -fL# -o mm-cleanup https://kaos.sh/mattermost-scripts/mm-cleanup
 curl -fL# -o mm-backup https://kaos.sh/mattermost-scripts/mm-backup
-chmod +x mm-cleanup mm-backup
-sudo mv mm-cleanup mm-backup /usr/bin/
+curl -fL# -o mm-backup https://kaos.sh/mattermost-scripts/mm-useredit
+chmod +x mm-cleanup mm-backup mm-useredit
+sudo mv mm-cleanup mm-backup mm-useredit /usr/bin/
 ```
 
 #### Periodical jobs with Crond
