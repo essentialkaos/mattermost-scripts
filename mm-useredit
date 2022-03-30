@@ -72,7 +72,7 @@ check() {
   fi
 
   if ! type -P jq &> /dev/null ; then
-    log "jq is required for this script"
+    error "jq is required for this script"
     exit 1
   fi
 }
@@ -93,7 +93,7 @@ editUsername() {
 
   local username new_value
 
-  read -rp "New email: " username
+  read -rp "New username: " username
 
   show "Updating user ${CL_BOLD}${user_id}${CL_NORM}…"
 
