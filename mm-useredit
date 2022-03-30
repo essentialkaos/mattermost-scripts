@@ -1,0 +1,252 @@
+#!/bin/bash
+# shellcheck disable=SC2034
+
+################################################################################
+
+NORM=0
+BOLD=1
+UNLN=4
+RED=31
+GREEN=32
+YELLOW=33
+BLUE=34
+MAG=35
+CYAN=36
+GREY=37
+DARK=90
+
+CL_NORM="\e[0m"
+CL_BOLD="\e[0;${BOLD};49m"
+CL_UNLN="\e[0;${UNLN};49m"
+CL_RED="\e[0;${RED};49m"
+CL_GREEN="\e[0;${GREEN};49m"
+CL_YELLOW="\e[0;${YELLOW};49m"
+CL_BLUE="\e[0;${BLUE};49m"
+CL_MAG="\e[0;${MAG};49m"
+CL_CYAN="\e[0;${CYAN};49m"
+CL_GREY="\e[0;${GREY};49m"
+CL_DARK="\e[0;${DARK};49m"
+
+################################################################################
+
+MM_HOST=""
+MM_TOKEN=""
+
+################################################################################
+
+main() {
+  check
+
+  if [[ $# -lt 2 ]] ; then
+    show "${CL_BOLD}Usage:${CL_NORM} $0 ${CL_GREEN}{property} {user-id}${CL_NORM}"
+    exit 0
+  fi
+
+  local property="$1"
+  local user_id="$2"
+
+  case "$property" in
+    "mail")     editMail     "$user_id" ;;
+    "username") editUsername "$user_id" ;;
+    "names")    editNames    "$user_id" ;;
+    "nickname") editNickname "$user_id" ;;
+    "position") editPosition "$user_id" ;;
+    *) error "Uknown property \"$property\"" ;;
+  esac
+}
+
+check() {
+  if [[ -z "$MM_HOST" ]] ; then
+    error "Mattermost host (MM_HOST) is empty"
+    exit 1
+  fi
+
+  if [[ -z "$MM_TOKEN" ]] ; then
+    error "Mattermost token (MM_TOKEN) is empty"
+    exit 1
+  fi
+
+  if [[ ${#MM_TOKEN} -ne 26 ]] ; then
+    error "Mattermost token (MM_TOKEN) is misformatted"
+    exit 1
+  fi
+
+  if ! type -P jq &> /dev/null ; then
+    log "jq is required for this script"
+    exit 1
+  fi
+}
+
+# Edit user username
+#
+# 1: User ID (String)
+#
+# Code: No
+# Echo: No
+editUsername() {
+  local user_id="$1"
+
+  if ! isValidUserID "$user_id" ; then
+    error "Can't use ID \"$user_id\": user ID is invalid"
+    exit 1
+  fi
+
+  local username new_value
+
+  read -rp "New email: " username
+
+  show "Updating user ${CL_BOLD}${user_id}${CL_NORM}…"
+
+  new_value=$(curl -s -X PUT -H "Authorization: Bearer $MM_TOKEN" -d "{\"username\":\"$username\"}" "$MM_HOST/api/v4/users/${user_id}/patch" | jq '.username')
+
+  show "Username changed to ${CL_CYAN}${new_value}${CL_NORM}"
+}
+
+# Edit user email
+#
+# 1: User ID (String)
+#
+# Code: No
+# Echo: No
+editMail() {
+  local user_id="$1"
+
+  if ! isValidUserID "$user_id" ; then
+    error "Can't use ID \"$user_id\": user ID is invalid"
+    exit 1
+  fi
+
+  local mail new_value
+
+  read -rp "New email: " mail
+
+  show "Updating user ${CL_BOLD}${user_id}${CL_NORM}…"
+
+  new_value=$(curl -s -X PUT -H "Authorization: Bearer $MM_TOKEN" -d "{\"email\":\"$mail\"}" "$MM_HOST/api/v4/users/${user_id}/patch" | jq '.email')
+
+  show "Email changed to ${CL_CYAN}${new_value}${CL_NORM}"
+}
+
+# Edit user first and last name
+#
+# 1: User ID (String)
+#
+# Code: No
+# Echo: No
+editNames() {
+  local user_id="$1"
+
+  if ! isValidUserID "$user_id" ; then
+    error "Can't use ID \"$user_id\": user ID is invalid"
+    exit 1
+  fi
+
+  local first_name last_name new_value
+
+  read -rp "New first name: " first_name
+  read -rp "New last name: " last_name
+
+  show "Updating user ${CL_BOLD}${user_id}${CL_NORM}…"
+
+  new_value=$(curl -s -X PUT -H "Authorization: Bearer $MM_TOKEN" -d "{\"first_name\":\"$first_name\",\"last_name\":\"$last_name\"}" "$MM_HOST/api/v4/users/${user_id}/patch" | jq '.first_name + " " + .last_name')
+
+  show "Names changed to ${CL_CYAN}${new_value}${CL_NORM}"
+}
+
+# Edit user nickname
+#
+# 1: User ID (String)
+#
+# Code: No
+# Echo: No
+editNickname() {
+  local user_id="$1"
+
+  if ! isValidUserID "$user_id" ; then
+    error "Can't use ID \"$user_id\": user ID is invalid"
+    exit 1
+  fi
+
+  local nickname new_value
+
+  read -rp "New nickname: " nickname
+
+  show "Updating user ${CL_BOLD}${user_id}${CL_NORM}…"
+
+  new_value=$(curl -s -X PUT -H "Authorization: Bearer $MM_TOKEN" -d "{\"nickname\":\"$nickname\"}" "$MM_HOST/api/v4/users/${user_id}/patch" | jq '.nickname')
+
+  show "Nickname changed to ${CL_CYAN}${new_value}${CL_NORM}"
+}
+
+# Edit user position info
+#
+# 1: User ID (String)
+#
+# Code: No
+# Echo: No
+editPosition() {
+  local user_id="$1"
+
+  if ! isValidUserID "$user_id" ; then
+    error "Can't use ID \"$user_id\": user ID is invalid"
+    exit 1
+  fi
+
+  local position new_value
+
+  read -rp "New position: " position
+
+  show "Updating user ${CL_BOLD}${user_id}${CL_NORM}…"
+
+  new_value=$(curl -s -X PUT -H "Authorization: Bearer $MM_TOKEN" -d "{\"position\":\"$position\"}" "$MM_HOST/api/v4/users/${user_id}/patch" | jq '.position')
+
+  show "Position changed to ${CL_CYAN}${new_value}${CL_NORM}"
+}
+
+# Check if given user ID is valid
+#
+# 1: User ID (String)
+#
+# Code: Yes
+# Echo: No
+isValidUserID() {
+  local user_id="$1"
+
+  if [[ ${#user_id} -ne 26 ]] ; then
+    return 1
+  fi
+
+  return 0
+}
+
+################################################################################
+
+# Show message
+#
+# 1: Message (String)
+# 2: Message color (Number) [Optional]
+#
+# Code: No
+# Echo: No
+show() {
+  if [[ -n "$2" ]] ; then
+    echo -e "\e[${2}m${1}\e[0m"
+  else
+    echo -e "$*"
+  fi
+}
+
+# Print error message
+#
+# 1: Message (String)
+# 2: Message color (Number) [Optional]
+#
+# Code: No
+# Echo: No
+error() {
+  show "$*" $RED 1>&2
+}
+
+################################################################################
+
+main "$@"
