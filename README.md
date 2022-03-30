@@ -20,7 +20,7 @@ Scripts collection for [Mattermost](https://mattermost.com).
 ```bash
 curl -fL# -o mm-cleanup https://kaos.sh/mattermost-scripts/mm-cleanup
 curl -fL# -o mm-backup https://kaos.sh/mattermost-scripts/mm-backup
-curl -fL# -o mm-backup https://kaos.sh/mattermost-scripts/mm-useredit
+curl -fL# -o mm-useredit https://kaos.sh/mattermost-scripts/mm-useredit
 chmod +x mm-cleanup mm-backup mm-useredit
 sudo mv mm-cleanup mm-backup mm-useredit /usr/bin/
 ```
